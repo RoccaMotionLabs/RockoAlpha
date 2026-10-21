@@ -2,204 +2,220 @@ import streamlit as st
 from google import genai
 from google.genai import types
 
-# Configuración visual de la página
+# 1. Configuración de página
 st.set_page_config(
-    page_title="Rocko - RML Academy", 
+    page_title="RML Academy - Rocko", 
     page_icon="🤖", 
     layout="wide"
 )
 
-# Estilos CSS personalizados para tarjetas, métricas y pestañas
+# 2. Paleta de Colores Azules Fríos / Pastel / Grises Azulados (CSS Inyectado)
 st.markdown("""
 <style>
+    /* Estilo general con tonos azul frío y gris pastel */
+    .stApp {
+        background-color: #0f172a;
+        color: #e2e8f0;
+    }
+    /* Menú lateral gris azulado */
+    [data-testid="stSidebar"] {
+        background-color: #1e293b;
+        border-right: 1px solid #334155;
+    }
+    /* Tarjetas de métricas estilo pastel */
+    [data-testid="stMetric"] {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 12px;
+    }
     [data-testid="stMetricValue"] {
+        color: #93c5fd !important;
         font-weight: bold;
-        color: #ff4b4b;
     }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+    /* Estilo de los nodos / lecciones tipo Duolingo */
+    .node-card {
+        background-color: #1e293b;
+        border: 2px solid #3b82f6;
+        border-radius: 16px;
+        padding: 16px;
+        text-align: center;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }
+    /* Pestañas estilizadas */
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        background-color: #1e222d;
-        border-radius: 8px 8px 0px 0px;
-        padding-left: 20px;
-        padding-right: 20px;
+        background-color: #1e293b;
+        color: #94a3b8;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 20px;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #2e364f;
-        border-bottom: 3px solid #ff4b4b;
+        background-color: #334155 !important;
+        color: #60a5fa !important;
+        border-bottom: 3px solid #60a5fa !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZAR MEMORIA DE SESIÓN (SESSION_STATE) ---
+# 3. Inicializar variables de estado (session_state)
 if "xp" not in st.session_state:
     st.session_state.xp = 0
 if "racha" not in st.session_state:
     st.session_state.racha = 1
 if "problemas_resueltos" not in st.session_state:
     st.session_state.problemas_resueltos = 0
-if "modo_rocko" not in st.session_state:
-    st.session_state.modo_rocko = "Tutor Explicativo"
-if "mision_extra_desbloqueada" not in st.session_state:
-    st.session_state.mision_extra_desbloqueada = False
+if "misiones" not in st.session_state:
+    st.session_state.misiones = [
+        {"id": 1, "titulo": "Resolver 1er problema de Ley de Ohm", "recompensa": 50, "completada": False},
+        {"id": 2, "titulo": "Alcanzar 100 Stones acumuladas", "recompensa": 50, "completada": False},
+        {"id": 3, "titulo": "Completar 3 análisis en la Consola NLP", "recompensa": 100, "completada": False}
+    ]
 
-# --- BARRA LATERAL (SIDEBAR) ---
-st.sidebar.image("https://img.icons8.com/color/96/robot-2.png", width=80)
+# 4. Barra Lateral (Sidebar)
+st.sidebar.image("https://img.icons8.com/color/96/robot-2.png", width=70)
 st.sidebar.title("🗺️ RML Academy")
 
-# Panel de Estadísticas
 col_xp, col_racha = st.sidebar.columns(2)
 col_xp.metric("🪨 Stones", f"{st.session_state.xp} pts")
 col_racha.metric("🔥 Racha", f"{st.session_state.racha} días")
 
 nivel = (st.session_state.xp // 100) + 1
-st.sidebar.caption(f"🏆 Estudiante: **Nivel {nivel}**")
-
+st.sidebar.caption(f"🏆 Nivel Estudiante: **Nivel {nivel}**")
 st.sidebar.divider()
 
-# Módulo de Aprendizaje
 modulo = st.sidebar.selectbox(
-    "Elige tu Módulo de Aprendizaje:",
+    "Módulo de Aprendizaje:",
     [
         "Módulo 1: Circuitos Eléctricos y Electrónica",
         "Módulo 2: CNC y Maquinado de Precisión",
         "Módulo 3: Mecanismos, Robótica y Cinemática",
-        "Módulo 4: Procesos Industriales, Taller y Termofluidos"
+        "Módulo 4: Procesos Industriales y Termofluidos"
     ]
 )
 
-# Progreso
-progreso_modulo = min((st.session_state.problemas_resueltos / 10), 1.0)
-st.sidebar.write("Progreso del Módulo:")
-st.sidebar.progress(progreso_modulo)
-
-# --- SISTEMA DINÁMICO DE MISIONES ---
-completada_1 = st.session_state.problemas_resueltos >= 1
-completada_2 = st.session_state.xp >= 100
-completada_3 = st.session_state.problemas_resueltos >= 3
-
-with st.sidebar.expander("🎯 Misiones del Día", expanded=True):
-    st.write(f"{'✅' if completada_1 else '⬜'} **Primer Paso:** Resolver 1 problema (+50 Stones)")
-    st.write(f"{'✅' if completada_2 else '⬜'} **Aprendiz:** Acumular 100 Stones (+50 Stones)")
-    st.write(f"{'✅' if completada_3 else '⬜'} **Maestría:** Resolver 3 problemas (+100 Stones)")
-    if st.session_state.mision_extra_desbloqueada:
-        st.write("🌟 **Misión Especial Admin:** Desbloqueada (+150 Stones)")
+# Misiones dinámicas en Sidebar
+with st.sidebar.expander("🎯 Misiones de la Sesión", expanded=True):
+    for m in st.session_state.misiones:
+        check = "✅" if m["completada"] else "⬜"
+        st.write(f"{check} **{m['titulo']}** (+{m['recompensa']} 🪨)")
 
 st.sidebar.divider()
 
-# --- PANEL DE CONTROL ADMIN ---
-modo_admin = st.sidebar.checkbox("🔒 Acceso Admin")
-es_admin_autenticado = False
-
+# Acceso Admin
+modo_admin = st.sidebar.checkbox("🔒 Panel Admin")
+es_admin = False
 if modo_admin:
-    clave_admin = st.sidebar.text_input("Contraseña Admin:", type="password")
-    if clave_admin == "8323052011":
+    clave = st.sidebar.text_input("Clave Admin:", type="password")
+    if clave == "8323052011":
         st.sidebar.success("🔑 Autenticado como ADMIN")
-        es_admin_autenticado = True
-    elif clave_admin != "":
-        st.sidebar.error("❌ Contraseña incorrecta")
+        es_admin = True
+    elif clave != "":
+        st.sidebar.error("❌ Clave incorrecta")
 
-# Configuración de API Key
-api_key = st.secrets.get("GEMINI_API_KEY") if "GEMINI_API_KEY" in st.secrets else st.sidebar.text_input("Ingresa tu API Key de Gemini:", type="password")
+api_key = st.secrets.get("GEMINI_API_KEY") if "GEMINI_API_KEY" in st.secrets else st.sidebar.text_input("API Key Gemini:", type="password")
 
-# --- VISTA PRINCIPAL CON ESTRUCTURA MODULAR (PESTAÑAS) ---
-st.title("¡Hola! mi nombre es 🤖 Rocko")
-st.caption("Puedo ayudarte a comprender más sobre el álgebra, guiándote paso a paso.")
+# 5. Encabezado
+st.title("🤖 Rocko | RML Academy")
+st.caption("Plataforma interactiva de traducción de lenguaje natural a modelos algebraicos.")
 
-# VISTA DEL ADMIN DASHBOARD (SI SE AUTENTICA)
-if modo_admin and es_admin_autenticado:
-    with st.expander("⚙️ PANEL DE CONTROL ADMIN (GESTIÓN DE SESIÓN)", expanded=True):
-        st.write("Ajusta los parámetros y reglas de la sesión activa en tiempo real:")
+# 6. Panel de Administración Mejorado (Gestión de Misiones y Métricas)
+if modo_admin and es_admin:
+    with st.expander("⚙️ PANEL DE CONTROL DE MISIONES Y PARÁMETROS ADMIN", expanded=True):
+        st.subheader("🛠️ Gestor Global de Misiones")
         
-        col_a1, col_a2, col_a3, col_a4 = st.columns(4)
-        col_a1.metric("Consultas Totales", f"{st.session_state.problemas_resueltos}")
-        col_a2.metric("Stones Totales", f"{st.session_state.xp} pts")
-        col_a3.metric("Nivel Sesión", f"Nivel {nivel}")
-        col_a4.metric("Modo IA", st.session_state.modo_rocko)
-        
-        st.subheader("🛠️ Modificadores de Sesión")
-        col_ctrl1, col_ctrl2, col_ctrl3 = st.columns(3)
-        
-        with col_ctrl1:
-            monto_stones = st.number_input("Modificar Stones (+/-):", value=50, step=25)
-            if st.button("Aplicar Ajuste de Stones"):
-                st.session_state.xp = max(0, st.session_state.xp + monto_stones)
-                st.toast(f"Stones ajustadas en {monto_stones} pts.", icon="🪨")
-                st.rerun()
-                
-        with col_ctrl2:
-            st.session_state.modo_rocko = st.selectbox(
-                "Comportamiento de Rocko:",
-                ["Tutor Explicativo", "Examen Rápido (Conciso)", "Modo Desafío Avanzado"]
-            )
+        # Crear nueva misión dinámicamente
+        with st.form("nueva_mision_form"):
+            col_m1, col_m2 = st.columns([3, 1])
+            nueva_m_titulo = col_m1.text_input("Título de la nueva misión:")
+            nueva_m_pts = col_m2.number_input("Stones 🪨:", value=50, step=25)
+            btn_crear_mision = st.form_submit_button("➕ Agregar Misión")
             
-        with col_ctrl3:
-            if st.button("🔓 Activar Misión Especial"):
-                st.session_state.mision_extra_desbloqueada = True
-                st.toast("¡Misión especial activada en la sesión!", icon="🌟")
+            if btn_crear_mision and nueva_m_titulo:
+                st.session_state.misiones.append({
+                    "id": len(st.session_state.misiones) + 1,
+                    "titulo": nueva_m_titulo,
+                    "recompensa": nueva_m_pts,
+                    "completada": False
+                })
+                st.toast("¡Nueva misión agregada con éxito!", icon="🎯")
                 st.rerun()
-                
-            if st.button("🔴 Reiniciar Datos de Sesión"):
-                st.session_state.xp = 0
-                st.session_state.problemas_resueltos = 0
-                st.session_state.mision_extra_desbloqueada = False
-                st.rerun()
+
+        # Control manual de estado
+        col_adm1, col_adm2 = st.columns(2)
+        if col_adm1.button("🎁 Otorgar +100 Stones 🪨"):
+            st.session_state.xp += 100
+            st.toast("Bonificación aplicada.")
+            st.rerun()
+        if col_adm2.button("🔴 Resetear Datos de Sesión"):
+            st.session_state.xp = 0
+            st.session_state.problemas_resueltos = 0
+            for m in st.session_state.misiones:
+                m["completada"] = False
+            st.rerun()
     st.divider()
 
-# --- PESTAÑAS PRINCIPALES DE LA APLICACIÓN ---
-tab_academy, tab_chat, tab_perfil = st.tabs(["🗺️ Centro de Aprendizaje", "💬 Consola Rocko NLP", "📊 Expediente de Avance"])
+# 7. Vista Principal Estilo Duolingo (Ruta + Consola + Diagnóstico)
+tab_ruta, tab_consola, tab_reporte = st.tabs(["🗺️ Ruta de Aprendizaje", "💬 Consola Rocko NLP", "📊 Diagnóstico Técnico"])
 
-with tab_academy:
-    st.subheader(f"Módulo Activo: {modulo}")
-    st.info("Selecciona un tema de estudio o redacta tu consulta en la Consola NLP para ser guiado paso a paso por el modelo algebraico.")
+with tab_ruta:
+    st.subheader(f"Ruta Interactiva: {modulo}")
+    st.write("Selecciona un nodo de la ruta para cargar el caso de estudio correspondiente:")
     
-    col_info1, col_info2 = st.columns(2)
-    with col_info1:
+    col_n1, col_n2, col_n3 = st.columns(3)
+    
+    with col_n1:
         st.markdown("""
-        ### 📌 Estructura de Resolución (7 Secciones)
-        1. **Contexto:** Definición del marco del problema.
-        2. **Datos:** Extraídos del enunciado.
-        3. **Variables:** Identificación algebraica.
-        4. **Modelo Matemático:** Formulación y ecuaciones.
-        5. **Procedimiento:** Evaluación del Árbol de Decisión.
-        6. **Solución:** Cómputo y resultado.
-        7. **Interpretación Técnica:** Explicación ingenieril.
-        """)
-    with col_info2:
-        st.markdown(f"""
-        ### ⚙️ Configuración Actual
-        * **Modo de Operación:** `{st.session_state.modo_rocko}`
-        * **Nivel de Usuario:** `Nivel {nivel}`
-        * **Stones Acumuladas:** `{st.session_state.xp} pts`
-        """)
+        <div class="node-card">
+            <h4>⚡ Nodo 1: Ley de Ohm</h4>
+            <p><small>Análisis de voltaje, corriente y resistencia en serie.</small></p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Cargar Caso 1 en Consola"):
+            st.session_state.prompt_cargado = "Tengo un circuito en serie con V=24V, R1=100 y R2=200 ohms. Calcula I total y V2."
+            st.success("Caso cargado. Ve a la pestaña 'Consola Rocko NLP'.")
 
-with tab_chat:
+    with col_n2:
+        st.markdown("""
+        <div class="node-card">
+            <h4>⚙️ Nodo 2: Velocidad CNC</h4>
+            <p><small>Cálculo de velocidad de corte Vc y RPM del husillo.</small></p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Cargar Caso 2 en Consola"):
+            st.session_state.prompt_cargado = "Calcula la velocidad de corte Vc para un maquinado con diámetro D=50mm a N=1200 RPM."
+            st.success("Caso cargado. Ve a la pestaña 'Consola Rocko NLP'.")
+
+    with col_n3:
+        st.markdown("""
+        <div class="node-card">
+            <h4>🤖 Nodo 3: Cinemática Robot</h4>
+            <p><small>Torque en la articulación de un brazo robótico.</small></p>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Cargar Caso 3 en Consola"):
+            st.session_state.prompt_cargado = "Un brazo robótico de 0.5m sostiene una masa de 2kg en el extremo. ¿Cuál es el torque en la articulación?"
+            st.success("Caso cargado. Ve a la pestaña 'Consola Rocko NLP'.")
+
+with tab_consola:
     if api_key:
         try:
             client = genai.Client(api_key=api_key)
 
             prompt_sistema = f"""
-            Eres Rocko, un tutor técnico gamificado para RML Academy en Mecatrónica y Electromecánica.
-            El usuario está trabajando en el **{modulo}**.
-            Modo de operación actual solicitado por el sistema: **{st.session_state.modo_rocko}**.
+            Eres Rocko, el motor de inteligencia técnica para RML Academy.
+            Modulo activo: **{modulo}**.
 
-            Tus directrices de actuación:
-            1. Saluda de forma motivadora y breve.
-            2. Mapea la consulta del usuario hacia el modelo algebraico del módulo.
-            3. Estructura tu respuesta estrictamente en las 7 secciones:
+            Reglas de respuesta:
+            1. Procesa la entrada del usuario como un problema de ingeniería mecatrónica.
+            2. Responde estrictamente formateado en las 7 secciones:
                - 1. Contexto | 2. Datos | 3. Variables | 4. Modelo Matemático | 5. Procedimiento (Árbol de Decisión) | 6. Solución | 7. Interpretación Técnica
-            4. Mantén una comunicación profesional y ajustada al modo de operación activo.
+            3. Sé conciso, técnico y formal.
             """
 
-            # Historial de Chat
             if "mensajes" not in st.session_state:
                 st.session_state.mensajes = [
-                    {
-                        "role": "assistant", 
-                        "content": f"¡Bienvenido a la consola! 🚀 Estoy listo para ayudarte con el **{modulo}** (Modo: {st.session_state.modo_rocko}). Escribe tu consulta para ganar +50 Stones."
-                    }
+                    {"role": "assistant", "content": f"Consola lista para el **{modulo}**. Selecciona un nodo en la Ruta o escribe un problema directamente."}
                 ]
 
             for msg in st.session_state.mensajes:
@@ -207,51 +223,57 @@ with tab_chat:
                 with st.chat_message(msg["role"], avatar=avatar):
                     st.write(msg["content"])
 
-            # Entrada de Texto
-            if prompt := st.chat_input("Escribe aquí tu problema o consulta técnica..."):
-                st.session_state.mensajes.append({"role": "user", "content": prompt})
+            # Detectar prompt cargado desde la ruta o del chat input
+            prompt_input = st.chat_input("Escribe o pega tu consulta técnica aquí...")
+            prompt_final = prompt_input
+            
+            if "prompt_cargado" in st.session_state and st.session_state.prompt_cargado:
+                prompt_final = st.session_state.prompt_cargado
+                st.session_state.prompt_cargado = None # Limpiar tras consumir
+
+            if prompt_final:
+                st.session_state.mensajes.append({"role": "user", "content": prompt_final})
                 with st.chat_message("user", avatar="👤"):
-                    st.write(prompt)
+                    st.write(prompt_final)
 
                 with st.chat_message("assistant", avatar="🤖"):
-                    with st.spinner("Rocko está evaluando tu respuesta y procesando las ecuaciones..."):
-                        try:
-                            response = client.models.generate_content(
-                                model='gemini-3.8-flash',
-                                contents=prompt,
-                                config=types.GenerateContentConfig(
-                                    system_instruction=prompt_sistema,
-                                ),
-                            )
-                            st.write(response.text)
-                            st.session_state.mensajes.append({"role": "assistant", "content": response.text})
+                    with st.spinner("Rocko evaluando modelo matemático y árbol de decisión..."):
+                        response = client.models.generate_content(
+                            model='gemini-3.8-flash',
+                            contents=prompt_final,
+                            config=types.GenerateContentConfig(system_instruction=prompt_sistema),
+                        )
+                        st.write(response.text)
+                        st.session_state.mensajes.append({"role": "assistant", "content": response.text})
 
-                            # AUMENTAR GAMIFICACIÓN
-                            st.session_state.xp += 50
-                            st.session_state.problemas_resueltos += 1
-                            st.toast("¡+50 Stones Ganadas! 🎉", icon="🪨")
+                        # Actualizar gamificación y verificar misiones
+                        st.session_state.xp += 50
+                        st.session_state.problemas_resueltos += 1
+                        
+                        # Evaluar misiones
+                        if st.session_state.problemas_resueltos >= 1:
+                            st.session_state.misiones[0]["completada"] = True
+                        if st.session_state.xp >= 100:
+                            st.session_state.misiones[1]["completada"] = True
+                        if st.session_state.problemas_resueltos >= 3:
+                            st.session_state.misiones[2]["completada"] = True
                             
-                            if st.session_state.xp % 100 == 0:
-                                st.balloons()
-
-                        except Exception as err:
-                            st.error(f"Error al procesar la respuesta: {err}")
+                        st.toast("¡+50 Stones 🪨 ganadas!", icon="🪨")
+                        if st.session_state.xp % 100 == 0:
+                            st.balloons()
 
         except Exception as e:
-            st.error(f"Error con la API Key de Gemini: {e}")
+            st.error(f"Error de API: {e}")
     else:
-        st.warning("⚠️ Configura la `GEMINI_API_KEY` en los Secrets de Streamlit Cloud.")
+        st.warning("⚠️ Configura la `GEMINI_API_KEY` en los Secrets o barra lateral.")
 
-with tab_perfil:
-    st.subheader("📊 Resumen de Rendimiento del Estudiante")
-    col_p1, col_p2 = st.columns(2)
-    col_p1.metric("Puntos Totales (Stones)", f"{st.session_state.xp}")
-    col_p2.metric("Problemas Analizados", f"{st.session_state.problemas_resueltos}")
+with tab_reporte:
+    st.subheader("📊 Diagnóstico del Alumno y Registro de Actividad")
+    col_r1, col_r2 = st.columns(2)
+    col_r1.metric("Casos Analizados", f"{st.session_state.problemas_resueltos}")
+    col_r2.metric("Puntuación Total", f"{st.session_state.xp} pts")
     
-    st.write("### Logros de la Sesión")
-    if st.session_state.problemas_resueltos > 0:
-        st.success("🥇 **Primer Problema Resuelto:** Has iniciado la traducción de lenguaje natural a álgebra.")
-    if st.session_state.xp >= 100:
-        st.success("🌟 **Nivel 2 Alcanzado:** Dominio de conceptos básicos.")
-    if st.session_state.mision_extra_desbloqueada:
-        st.info("⚡ **Reconocimiento Admin:** Se ha otorgado una misión especial a este perfil.")
+    st.write("### Avance en Misiones")
+    for m in st.session_state.misiones:
+        estado = "Completada ✅" if m["completada"] else "Pendiente ⬜"
+        st.info(f"**{m['titulo']}** — Estado: `{estado}` — Recompensa: `{m['recompensa']} Stones`")
