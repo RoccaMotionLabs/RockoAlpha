@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 # Encabezado principal
-st.title("🤖 Rocko | Asistente Técnico RML-01")
+st.title("🤖 Rocko esta para ti!")
 st.caption("Álgebra Aplicada para Mecatrónica y Electromecánica")
 
 # Menú lateral
@@ -38,7 +38,7 @@ if api_key:
         genai.configure(api_key=api_key)
 
         # Nombre del modelo activo para plan gratuito
-        nombre_modelo = "gemini-1.5-flash"
+        nombre_modelo = "gemini-2.0-flash"
 
         st.sidebar.success(f"Módulo: {modulo.split(':')[0]}")
         st.sidebar.info(f"Modelo activo: `{nombre_modelo}`")
