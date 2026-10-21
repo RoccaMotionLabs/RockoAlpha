@@ -116,7 +116,7 @@ if "misiones" not in st.session_state:
 # 5. BARRA LATERAL (SIDEBAR) CON FOTO DE ROCKO
 col_logo_side, col_title_side = st.sidebar.columns([1, 2])
 with col_logo_side:
-    st.image(ROCKO_IMAGE_URL, width=65)
+    st.image(ROCKO_IMAGE_URL, width=85)
 with col_title_side:
     st.sidebar.title("RML Academy")
 
