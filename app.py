@@ -3,7 +3,7 @@ import google.generativeai as genai
 
 # Configuración visual de la página
 st.set_page_config(
-    page_title="Rocko - Asistente RML-01", 
+    page_title="Rocko - MDOSS", 
     page_icon="🤖", 
     layout="wide"
 )
@@ -12,7 +12,7 @@ st.set_page_config(
 st.title("🤖 Rocko | Asistente Técnico RML-01")
 st.caption("Álgebra Aplicada para Mecatrónica y Electromecánica")
 
-# Menú lateral para organizar los módulos
+# Menú lateral
 st.sidebar.image("https://img.icons8.com/color/96/robot-2.png", width=80)
 st.sidebar.title("Configuración")
 
@@ -26,7 +26,7 @@ modulo = st.sidebar.selectbox(
     ]
 )
 
-# Gestión de la clave de API (Secrets de Streamlit o entrada manual)
+# Clave de API
 api_key = None
 if "GEMINI_API_KEY" in st.secrets:
     api_key = st.secrets["GEMINI_API_KEY"]
@@ -37,22 +37,13 @@ if api_key:
     try:
         genai.configure(api_key=api_key)
 
-        # Detección automática del modelo disponible para la API Key gratuita
-        modelos_disponibles = [
-            m.name for m in genai.list_models() 
-            if 'generateContent' in m.supported_generation_methods
-        ]
-
-        if modelos_disponibles:
-            # Selecciona el primer modelo de la lista y remueve prefijos
-            nombre_modelo = modelos_disponibles[0].replace('models/', '')
-        else:
-            nombre_modelo = "gemini-1.5-flash"
+        # Nombre del modelo activo para plan gratuito
+        nombre_modelo = "gemini-1.5-flash"
 
         st.sidebar.success(f"Módulo: {modulo.split(':')[0]}")
         st.sidebar.info(f"Modelo activo: `{nombre_modelo}`")
 
-        # Instrucciones base del sistema para Rocko
+        # Instrucciones base para Rocko
         prompt_sistema = f"""
         Eres Rocko, el asistente técnico oficial con IA para el dossier RML-01 de Mecatrónica y Electromecánica.
         El usuario está trabajando actualmente en el **{modulo}**.
@@ -73,13 +64,13 @@ if api_key:
         6. Si el problema carece de datos suficientes, indícale al usuario qué variables específicas hacen falta.
         """
 
-        # Inicialización del modelo con system instructions
+        # Inicialización de Rocko
         modelo = genai.GenerativeModel(
             model_name=nombre_modelo,
             system_instruction=prompt_sistema
         )
 
-        # Historial de conversación guardado en sesión
+        # Historial de conversación
         if "mensajes" not in st.session_state:
             st.session_state.mensajes = [
                 {
@@ -88,13 +79,11 @@ if api_key:
                 }
             ]
 
-        # Desplegar historial de chat
         for msg in st.session_state.mensajes:
             avatar = "🤖" if msg["role"] == "assistant" else "👤"
             with st.chat_message(msg["role"], avatar=avatar):
                 st.write(msg["content"])
 
-        # Entrada de usuario
         if prompt := st.chat_input("Escribe tu problema o consulta técnica aquí..."):
             st.session_state.mensajes.append({"role": "user", "content": prompt})
             with st.chat_message("user", avatar="👤"):
