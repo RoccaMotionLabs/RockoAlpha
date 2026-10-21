@@ -4,7 +4,7 @@ import time
 from google import genai
 from google.genai import types
 
-ROCKO_IMAGE_URL = "https://i.postimg.cc/yxGVScWZ/imagen.png"
+ROCKO_IMAGE_URL = "https://www.tecsaqro.com.mx/wp-content/uploads/2021/10/tiempo_de_inactividad_3.jpg"
 
 # 1. Configuración de la página
 st.set_page_config(
@@ -188,7 +188,7 @@ with col_head_img:
 
 with col_head_txt:
     st.title("🤖 Rocko | RML Academy")
-    st.caption("Sistema experto de tutoría mecatrónica con motor de misiones contextuales.")
+    st.caption("¡Hola! Puedo ayudarte con alguna duda que se te presente en álgebra o prácticas.")
 
 # 7. PANEL DE CONTROL ADMIN
 if modo_admin and es_admin:
