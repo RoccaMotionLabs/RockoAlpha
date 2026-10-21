@@ -40,7 +40,7 @@ if api_key:
         client = genai.Client(api_key=api_key)
 
         st.sidebar.success(f"Módulo: {modulo.split(':')[0]}")
-        st.sidebar.info("Modelo activo: `gemini-2.5-flash`")
+        st.sidebar.info("Modelo activo: `gemini-3.8-flash`")
 
         # Prompt de sistema para Rocko
         prompt_sistema = f"""
