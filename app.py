@@ -4,7 +4,6 @@ import time
 from google import genai
 from google.genai import types
 
-# URL de la imagen oficial de Rocko (Postimg)
 ROCKO_IMAGE_URL = "https://i.postimg.cc/yxGVScWZ/imagen.png"
 
 # 1. Configuración de la página
@@ -14,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Estilos CSS Personalizados (Tonos Azul Frío / Pastel / Gris Sobrio)
+# 2. Estilos CSS Personalizados + FIX DE SCROLL Y BARRA DE ENTRADA FIJA ABAJO
 st.markdown("""
 <style>
     .stApp {
@@ -55,10 +54,16 @@ st.markdown("""
         color: #60a5fa !important;
         border-bottom: 3px solid #60a5fa !important;
     }
+    /* Fijar la barra de entrada en la parte inferior para comodidad del usuario */
+    div[data-testid="stChatInput"] {
+        position: fixed;
+        bottom: 20px;
+        z-index: 99;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# 3. BANCO DE MENSAJES Y RESPUESTAS LOCALES (0 TOKENS)
+# 3. BANCO DE MENSAJES LOCALES (0 TOKENS)
 BIENVENIDAS_ROCKO = [
     "¡Cascos puestos y multímetros listos! ⚡ Bienvenido al laboratorio. ¿En qué circuito o mecanismo trabajaremos hoy?",
     "¡Hola, colega! ⚙️ Listo el motor de cálculo algebraico. Selecciona un caso en la Ruta o escribe tu problema.",
@@ -68,7 +73,7 @@ BIENVENIDAS_ROCKO = [
 
 MENSAJES_REINTENTO_RED = [
     "📡 **Interferencia en la señal:** La red del laboratorio está experimentando un micro-corte. Reintentando enlace en breve...",
-    "⚡ **Carga de procesamiento elevada:** Los servidores de cálculo están saturados momentáneamente. Reintentando solicitud en segundo plano...",
+    "⚡ **Carga de procesamiento elevada:** Los servidores de cálculo están saturados momentáneamente. Reintentando solicitud...",
     "🔧 **Ajuste de frecuencia:** Ocurrió un retraso en el enlace del motor NLP. Reintentando conexión..."
 ]
 
@@ -98,7 +103,7 @@ col_logo_side, col_title_side = st.sidebar.columns([1, 2])
 with col_logo_side:
     st.image(ROCKO_IMAGE_URL, width=65)
 with col_title_side:
-    st.sidebar.title("🗺️ RML Academy")
+    st.sidebar.title("RML Academy")
 
 col_xp, col_racha = st.sidebar.columns(2)
 col_xp.metric("🪨 Stones", f"{st.session_state.xp} pts")
@@ -118,6 +123,12 @@ modulo = st.sidebar.selectbox(
     ]
 )
 
+# Modalidad de respuesta pedagógica
+modo_tutoria = st.sidebar.radio(
+    "Estilo de Tutoría:",
+    ["Explicación Completa (7 Secciones)", "Guía Paso a Paso (Modo Socrático)"]
+)
+
 # Misiones en Sidebar
 with st.sidebar.expander("🎯 Misiones de la Sesión", expanded=True):
     for m in st.session_state.misiones:
@@ -135,11 +146,11 @@ if modo_admin:
         st.sidebar.success("🔑 Autenticado como ADMIN")
         es_admin = True
     elif clave != "":
-        st.sidebar.warning("⚠️ Clave no reconocida. Verifica tus credenciales.")
+        st.sidebar.warning("⚠️ Clave no reconocida.")
 
 api_key = st.secrets.get("GEMINI_API_KEY") if "GEMINI_API_KEY" in st.secrets else st.sidebar.text_input("API Key Gemini:", type="password")
 
-# 6. ENCABEZADO PRINCIPAL CON LOGO DE ROCKO
+# 6. ENCABEZADO PRINCIPAL
 col_head_img, col_head_txt = st.columns([1, 5])
 
 with col_head_img:
@@ -149,7 +160,7 @@ with col_head_txt:
     st.title("🤖 Rocko | RML Academy")
     st.caption("Sistema experto de tutoría mecatrónica y traducción de problemas algebraicos.")
 
-# 7. PANEL DE CONTROL ADMIN (GESTIÓN EN TIEMPO REAL)
+# 7. PANEL DE CONTROL ADMIN
 if modo_admin and es_admin:
     with st.expander("⚙️ PANEL DE CONTROL DE MISIONES Y PARÁMETROS ADMIN", expanded=True):
         st.subheader("🛠️ Gestor Global de Misiones")
@@ -184,9 +195,8 @@ if modo_admin and es_admin:
     st.divider()
 
 # 8. ESTRUCTURA EN PESTAÑAS
-tab_ruta, tab_consola, tab_reporte = st.tabs(["🗺️ Ruta de Aprendizaje", "💬 Consola Rocko NLP", "📊 Diagnóstico Técnico"])
+tab_ruta, tab_consola, tab_reporte = st.tabs(["MAPA DE RUTA", "CONSOLA ROCKO NLP", "DIAGNÓSTICO TÉCNICO"])
 
-# PESTAÑA 1: RUTA DE APRENDIZAJE
 with tab_ruta:
     st.subheader(f"Ruta Interactiva: {modulo}")
     st.write("Selecciona un nodo de la ruta para cargar el caso de estudio correspondiente:")
@@ -202,7 +212,7 @@ with tab_ruta:
         """, unsafe_allow_html=True)
         if st.button("Cargar Caso 1 en Consola"):
             st.session_state.prompt_cargado = "Tengo un circuito en serie con V=24V, R1=100 y R2=200 ohms. Calcula I total y V2."
-            st.info("Caso cargado en consola. Dirígete a la pestaña 'Consola Rocko NLP' para revisar el desglose.")
+            st.info("Caso cargado. Ve a la pestaña 'CONSOLA ROCKO NLP'.")
 
     with col_n2:
         st.markdown("""
@@ -213,7 +223,7 @@ with tab_ruta:
         """, unsafe_allow_html=True)
         if st.button("Cargar Caso 2 en Consola"):
             st.session_state.prompt_cargado = "Calcula la velocidad de corte Vc para un maquinado con diámetro D=50mm a N=1200 RPM."
-            st.info("Caso cargado en consola. Dirígete a la pestaña 'Consola Rocko NLP' para revisar el desglose.")
+            st.info("Caso cargado. Ve a la pestaña 'CONSOLA ROCKO NLP'.")
 
     with col_n3:
         st.markdown("""
@@ -224,26 +234,31 @@ with tab_ruta:
         """, unsafe_allow_html=True)
         if st.button("Cargar Caso 3 en Consola"):
             st.session_state.prompt_cargado = "Un brazo robótico de 0.5m sostiene una masa de 2kg en el extremo. ¿Cuál es el torque en la articulación?"
-            st.info("Caso cargado en consola. Dirígete a la pestaña 'Consola Rocko NLP' para revisar el desglose.")
+            st.info("Caso cargado. Ve a la pestaña 'CONSOLA ROCKO NLP'.")
 
-# PESTAÑA 2: CONSOLA ROCKO NLP (BLINDADA CONTRA ERRORES 503 Y FUERA DE CONTEXTO)
 with tab_consola:
     if api_key:
         try:
             client = genai.Client(api_key=api_key)
 
+            regla_modo = (
+                "Desglosa el problema directamente completando las 7 secciones del dossier RML." 
+                if modo_tutoria == "Explicación Completa (7 Secciones)" 
+                else "Aplica el Método Socrático: Identifica los datos en la sección 1 y 2, pero en lugar de dar el cálculo final de inmediato, hazle una pregunta guía al alumno sobre el primer paso necesario."
+            )
+
             prompt_sistema = f"""
             Eres Rocko, un tutor experto en Mecatrónica de RML Academy.
             Módulo actualmente activo: **{modulo}**.
+            Modalidad seleccionada: **{modo_tutoria}**.
 
-            INSTRUCCIONES Y REGLAS DE RESPUESTA:
-            1. Actúa como un mentor de laboratorio. NUNCA uses respuestas genéricas de IA ("Como modelo de lenguaje", "Hola, soy una IA").
+            INSTRUCCIONES DE RESPUESTA:
+            1. Actúa como mentor de laboratorio. NUNCA uses respuestas genéricas de IA ("Como modelo de lenguaje").
             2. VALIDA EL MÓDULO Y EL CONTEXTO:
-               - Si el usuario realiza una pregunta ajena a la mecatrónica o fuera de la ingeniería (ej. recetas, entretenimiento, temas sin álgebra), recházala amablemente indicando que solo puedes responder dudas técnicas del dossier RML.
-               - Si la pregunta pertenece a OTRO módulo diferente a **{modulo}**, indícale al alumno que debe cambiar al módulo correspondiente en la barra lateral para resolver ese problema.
-            3. Si la pregunta es válida para **{modulo}**, estructura la respuesta ESTRICTAMENTE en las 7 Secciones del Dossier RML:
-               - 1. Contexto | 2. Datos | 3. Variables | 4. Modelo Matemático | 5. Procedimiento (Árbol de Decisión) | 6. Solución | 7. Interpretación Técnica
-            4. Si el planteamiento del alumno contiene un error de cálculo o despeje, indícalo específicamente en las secciones 4 y 5 explicándole en qué parte se equivocó.
+               - Si la consulta no es de ingeniería/mecatrónica, recházala amablemente.
+               - Si pertenece a OTRO módulo diferente a **{modulo}**, indica que debe cambiar el módulo en la barra lateral.
+            3. {regla_modo}
+            4. Si el usuario no dio un dato esencial (como el voltaje de fuente), indícalo amablemente para que lo proporcione o asuma un valor típico de laboratorio.
             """
 
             if "mensajes" not in st.session_state:
@@ -262,7 +277,7 @@ with tab_consola:
             
             if "prompt_cargado" in st.session_state and st.session_state.prompt_cargado:
                 prompt_final = st.session_state.prompt_cargado
-                st.session_state.prompt_cargado = None  # Consumir prompt
+                st.session_state.prompt_cargado = None
 
             if prompt_final:
                 st.session_state.mensajes.append({"role": "user", "content": prompt_final})
@@ -295,14 +310,18 @@ with tab_consola:
                                     else:
                                         st.warning(random.choice(MENSAJES_REINTENTO_RED))
                                 else:
-                                    st.info("💡 **Aviso del Sistema:** La consulta requiere un replanteamiento técnico. Revisa los datos o presiona Enter nuevamente.")
+                                    st.info("💡 **Aviso del Sistema:** Consulta en proceso de análisis.")
                                     break
                         
                         if exito:
                             st.session_state.xp += 50
                             st.session_state.problemas_resueltos += 1
                             
-                            if st.session_state.problemas_resueltos >= 1:
+                            prompt_low = prompt_final.lower()
+                            palabras_ohm = ["ohm", "resistencia", "voltaje", "corriente", "circuito", "paralelo", "serie", "v=", "i=", "r="]
+                            es_tema_ohm = any(p in prompt_low for p in palabras_ohm)
+                            
+                            if es_tema_ohm or st.session_state.problemas_resueltos >= 1:
                                 st.session_state.misiones[0]["completada"] = True
                             if st.session_state.xp >= 100:
                                 st.session_state.misiones[1]["completada"] = True
@@ -312,13 +331,14 @@ with tab_consola:
                             st.toast(random.choice(MENSAJES_TOAST_EXITO), icon="🪨")
                             if st.session_state.xp % 100 == 0:
                                 st.balloons()
+                            
+                            st.rerun()
 
         except Exception as e:
-            st.warning("⚡ Ocurrió un ajuste de conexión en el laboratorio. Intenta enviar tu consulta nuevamente.")
+            st.warning("⚡ Ocurrió un ajuste de conexión en el laboratorio.")
     else:
-        st.info("ℹ️ Para activar el motor de tutoría, ingresa la clave de acceso a la API en el menú lateral.")
+        st.info("ℹ️ Ingresa la clave de acceso a la API en el menú lateral.")
 
-# PESTAÑA 3: DIAGNÓSTICO TÉCNICO
 with tab_reporte:
     st.subheader("📊 Diagnóstico del Aprendiz y Registro de Actividad")
     col_r1, col_r2 = st.columns(2)
