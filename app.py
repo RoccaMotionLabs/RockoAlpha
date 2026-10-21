@@ -9,20 +9,20 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Paleta de Colores Azules Fríos / Pastel / Grises Azulados (CSS Inyectado)
+# 2. Estilos CSS Personalizados (Tonos Azul Frío / Pastel / Gris Sobrio)
 st.markdown("""
 <style>
-    /* Estilo general con tonos azul frío y gris pastel */
+    /* Estilo general */
     .stApp {
         background-color: #0f172a;
         color: #e2e8f0;
     }
-    /* Menú lateral gris azulado */
+    /* Barra lateral */
     [data-testid="stSidebar"] {
         background-color: #1e293b;
         border-right: 1px solid #334155;
     }
-    /* Tarjetas de métricas estilo pastel */
+    /* Tarjetas de Métricas */
     [data-testid="stMetric"] {
         background-color: #1e293b;
         border: 1px solid #334155;
@@ -33,7 +33,7 @@ st.markdown("""
         color: #93c5fd !important;
         font-weight: bold;
     }
-    /* Estilo de los nodos / lecciones tipo Duolingo */
+    /* Nodos de la Ruta de Aprendizaje (Estilo Duolingo) */
     .node-card {
         background-color: #1e293b;
         border: 2px solid #3b82f6;
@@ -43,7 +43,7 @@ st.markdown("""
         margin-bottom: 15px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }
-    /* Pestañas estilizadas */
+    /* Pestañas de Navegación */
     .stTabs [data-baseweb="tab"] {
         background-color: #1e293b;
         color: #94a3b8;
@@ -58,7 +58,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Inicializar variables de estado (session_state)
+# 3. Inicializar Estados en Memoria (session_state)
 if "xp" not in st.session_state:
     st.session_state.xp = 0
 if "racha" not in st.session_state:
@@ -72,9 +72,12 @@ if "misiones" not in st.session_state:
         {"id": 3, "titulo": "Completar 3 análisis en la Consola NLP", "recompensa": 100, "completada": False}
     ]
 
-# 4. Barra Lateral (Sidebar)
-st.sidebar.image("https://img.icons8.com/color/96/robot-2.png", width=70)
-st.sidebar.title("🗺️ RML Academy")
+# 4. BARRA LATERAL (SIDEBAR) CON IMAGEN DE ROCKO
+col_logo_side, col_title_side = st.sidebar.columns([1, 2])
+with col_logo_side:
+    st.image("https://i.imgur.com/3Yp7j7j.png", width=65)
+with col_title_side:
+    st.sidebar.title("🗺️ RML Academy")
 
 col_xp, col_racha = st.sidebar.columns(2)
 col_xp.metric("🪨 Stones", f"{st.session_state.xp} pts")
@@ -94,7 +97,7 @@ modulo = st.sidebar.selectbox(
     ]
 )
 
-# Misiones dinámicas en Sidebar
+# Misiones en Sidebar
 with st.sidebar.expander("🎯 Misiones de la Sesión", expanded=True):
     for m in st.session_state.misiones:
         check = "✅" if m["completada"] else "⬜"
@@ -115,16 +118,21 @@ if modo_admin:
 
 api_key = st.secrets.get("GEMINI_API_KEY") if "GEMINI_API_KEY" in st.secrets else st.sidebar.text_input("API Key Gemini:", type="password")
 
-# 5. Encabezado
-st.title("🤖 Rocko | RML Academy")
-st.caption("Plataforma interactiva de traducción de lenguaje natural a modelos algebraicos.")
+# 5. ENCABEZADO PRINCIPAL CON LOGO DE ROCKO
+col_head_img, col_head_txt = st.columns([1, 5])
 
-# 6. Panel de Administración Mejorado (Gestión de Misiones y Métricas)
+with col_head_img:
+    st.image("https://i.imgur.com/3Yp7j7j.png", width=100)
+
+with col_head_txt:
+    st.title("🤖 Rocko | RML Academy")
+    st.caption("Plataforma interactiva de traducción de lenguaje natural a modelos algebraicos.")
+
+# 6. PANEL DE CONTROL ADMIN (GESTIÓN EN TIEMPO REAL)
 if modo_admin and es_admin:
     with st.expander("⚙️ PANEL DE CONTROL DE MISIONES Y PARÁMETROS ADMIN", expanded=True):
         st.subheader("🛠️ Gestor Global de Misiones")
         
-        # Crear nueva misión dinámicamente
         with st.form("nueva_mision_form"):
             col_m1, col_m2 = st.columns([3, 1])
             nueva_m_titulo = col_m1.text_input("Título de la nueva misión:")
@@ -141,7 +149,6 @@ if modo_admin and es_admin:
                 st.toast("¡Nueva misión agregada con éxito!", icon="🎯")
                 st.rerun()
 
-        # Control manual de estado
         col_adm1, col_adm2 = st.columns(2)
         if col_adm1.button("🎁 Otorgar +100 Stones 🪨"):
             st.session_state.xp += 100
@@ -155,9 +162,10 @@ if modo_admin and es_admin:
             st.rerun()
     st.divider()
 
-# 7. Vista Principal Estilo Duolingo (Ruta + Consola + Diagnóstico)
+# 7. ESTRUCTURA EN PESTAÑAS
 tab_ruta, tab_consola, tab_reporte = st.tabs(["🗺️ Ruta de Aprendizaje", "💬 Consola Rocko NLP", "📊 Diagnóstico Técnico"])
 
+# PESTAÑA 1: RUTA DE APRENDIZAJE
 with tab_ruta:
     st.subheader(f"Ruta Interactiva: {modulo}")
     st.write("Selecciona un nodo de la ruta para cargar el caso de estudio correspondiente:")
@@ -197,6 +205,7 @@ with tab_ruta:
             st.session_state.prompt_cargado = "Un brazo robótico de 0.5m sostiene una masa de 2kg en el extremo. ¿Cuál es el torque en la articulación?"
             st.success("Caso cargado. Ve a la pestaña 'Consola Rocko NLP'.")
 
+# PESTAÑA 2: CONSOLA ROCKO NLP
 with tab_consola:
     if api_key:
         try:
@@ -204,11 +213,11 @@ with tab_consola:
 
             prompt_sistema = f"""
             Eres Rocko, el motor de inteligencia técnica para RML Academy.
-            Modulo activo: **{modulo}**.
+            Módulo activo: **{modulo}**.
 
             Reglas de respuesta:
             1. Procesa la entrada del usuario como un problema de ingeniería mecatrónica.
-            2. Responde estrictamente formateado en las 7 secciones:
+            2. Responde estrictamente formateado en las 7 secciones del dossier:
                - 1. Contexto | 2. Datos | 3. Variables | 4. Modelo Matemático | 5. Procedimiento (Árbol de Decisión) | 6. Solución | 7. Interpretación Técnica
             3. Sé conciso, técnico y formal.
             """
@@ -223,13 +232,12 @@ with tab_consola:
                 with st.chat_message(msg["role"], avatar=avatar):
                     st.write(msg["content"])
 
-            # Detectar prompt cargado desde la ruta o del chat input
             prompt_input = st.chat_input("Escribe o pega tu consulta técnica aquí...")
             prompt_final = prompt_input
             
             if "prompt_cargado" in st.session_state and st.session_state.prompt_cargado:
                 prompt_final = st.session_state.prompt_cargado
-                st.session_state.prompt_cargado = None # Limpiar tras consumir
+                st.session_state.prompt_cargado = None  # Consumir prompt
 
             if prompt_final:
                 st.session_state.mensajes.append({"role": "user", "content": prompt_final})
@@ -245,12 +253,11 @@ with tab_consola:
                         )
                         st.write(response.text)
                         st.session_state.mensajes.append({"role": "assistant", "content": response.text})
-
-                        # Actualizar gamificación y verificar misiones
+                        
+                        # Actualizar métricas y misiones
                         st.session_state.xp += 50
                         st.session_state.problemas_resueltos += 1
                         
-                        # Evaluar misiones
                         if st.session_state.problemas_resueltos >= 1:
                             st.session_state.misiones[0]["completada"] = True
                         if st.session_state.xp >= 100:
@@ -267,8 +274,9 @@ with tab_consola:
     else:
         st.warning("⚠️ Configura la `GEMINI_API_KEY` en los Secrets o barra lateral.")
 
+# PESTAÑA 3: DIAGNÓSTICO TÉCNICO
 with tab_reporte:
-    st.subheader("📊 Diagnóstico del Alumno y Registro de Actividad")
+    st.subheader("📊 Diagnóstico del Aprendiz y Registro de Actividad")
     col_r1, col_r2 = st.columns(2)
     col_r1.metric("Casos Analizados", f"{st.session_state.problemas_resueltos}")
     col_r2.metric("Puntuación Total", f"{st.session_state.xp} pts")
