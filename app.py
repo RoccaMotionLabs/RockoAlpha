@@ -13,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Estilos CSS Personalizados + FIX DE SCROLL Y BARRA DE ENTRADA FIJA ABAJO
+# 2. Estilos CSS Personalizados
 st.markdown("""
 <style>
     .stApp {
@@ -34,15 +34,6 @@ st.markdown("""
         color: #93c5fd !important;
         font-weight: bold;
     }
-    .node-card {
-        background-color: #1e293b;
-        border: 2px solid #3b82f6;
-        border-radius: 16px;
-        padding: 16px;
-        text-align: center;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-    }
     .stTabs [data-baseweb="tab"] {
         background-color: #1e293b;
         color: #94a3b8;
@@ -54,7 +45,6 @@ st.markdown("""
         color: #60a5fa !important;
         border-bottom: 3px solid #60a5fa !important;
     }
-    /* Fijar la barra de entrada en la parte inferior para comodidad del usuario */
     div[data-testid="stChatInput"] {
         position: fixed;
         bottom: 20px;
@@ -66,9 +56,9 @@ st.markdown("""
 # 3. BANCO DE MENSAJES LOCALES (0 TOKENS)
 BIENVENIDAS_ROCKO = [
     "¡Cascos puestos y multímetros listos! ⚡ Bienvenido al laboratorio. ¿En qué circuito o mecanismo trabajaremos hoy?",
-    "¡Hola, colega! ⚙️ Listo el motor de cálculo algebraico. Selecciona un caso en la Ruta o escribe tu problema.",
+    "¡Hola, colega! ⚙️ Listo el motor de cálculo algebraico. Revisa tus misiones activas o escribe tu problema.",
     "¡Atención en el taller! 🤖 Soy Rocko. Vamos a traducir tus consultas de ingeniería a modelos matemáticos paso a paso.",
-    "¡Excelente día para calcular! 🪨 Recuerda que cada problema resuelto te acerca al siguiente nivel de maestría mecatrónica."
+    "¡Excelente día para calcular! 🪨 Recuerda que cada misión completada te otorga Stones para subir de rango."
 ]
 
 MENSAJES_REINTENTO_RED = [
@@ -80,22 +70,45 @@ MENSAJES_REINTENTO_RED = [
 MENSAJES_TOAST_EXITO = [
     "¡Cálculo preciso! +50 Stones a tu expediente 🪨",
     "¡Demostración impecable! Avanzas en la racha 🪨",
-    "¡Ecuaciones validadas con éxito! +50 Stones 🪨",
+    "¡Ecuaciones validadas con éxito! 🪨",
     "¡Modelo algebraico resuelto sin fallas! 🪨"
 ]
 
-# 4. Inicialización de Estados en Memoria (session_state)
+# 4. INICIALIZACIÓN DE SISTEMA DE MISIONES 2.0 EN MEMORIA
 if "xp" not in st.session_state:
     st.session_state.xp = 0
 if "racha" not in st.session_state:
     st.session_state.racha = 1
 if "problemas_resueltos" not in st.session_state:
     st.session_state.problemas_resueltos = 0
+
+# Estructura enriquecida de misiones (con categoría y palabras clave de validación)
 if "misiones" not in st.session_state:
     st.session_state.misiones = [
-        {"id": 1, "titulo": "Resolver 1er problema de Ley de Ohm", "recompensa": 50, "completada": False},
-        {"id": 2, "titulo": "Alcanzar 100 Stones acumuladas", "recompensa": 50, "completada": False},
-        {"id": 3, "titulo": "Completar 3 análisis en la Consola NLP", "recompensa": 100, "completada": False}
+        {
+            "id": 1, 
+            "titulo": "Análisis de Ley de Ohm", 
+            "desc": "Resuelve un problema de voltaje, corriente o resistencia.",
+            "recompensa": 50, 
+            "completada": False,
+            "keywords": ["ohm", "resistencia", "voltaje", "corriente", "circuito", "v=", "i=", "r="]
+        },
+        {
+            "id": 2, 
+            "titulo": "Maquinado CNC o Cinemática", 
+            "desc": "Calcula velocidad de corte Vc, RPM o torque en brazo robótico.",
+            "recompensa": 75, 
+            "completada": False,
+            "keywords": ["cnc", "velocidad", "corte", "rpm", "torque", "robot", "brazo", "cinematica"]
+        },
+        {
+            "id": 3, 
+            "titulo": "Maestría de Laboratorio (150 Stones)", 
+            "desc": "Acumula 150 Stones en tu expediente de laboratorio.",
+            "recompensa": 100, 
+            "completada": False,
+            "keywords": [] # Se valida por puntaje
+        }
     ]
 
 # 5. BARRA LATERAL (SIDEBAR) CON FOTO DE ROCKO
@@ -110,7 +123,7 @@ col_xp.metric("🪨 Stones", f"{st.session_state.xp} pts")
 col_racha.metric("🔥 Racha", f"{st.session_state.racha} días")
 
 nivel = (st.session_state.xp // 100) + 1
-st.sidebar.caption(f"🏆 Nivel Estudiante: **Nivel {nivel}**")
+st.sidebar.caption(f"🏆 Rango Académico: **Ingeniero Nivel {nivel}**")
 st.sidebar.divider()
 
 modulo = st.sidebar.selectbox(
@@ -129,11 +142,14 @@ modo_tutoria = st.sidebar.radio(
     ["Explicación Completa (7 Secciones)", "Guía Paso a Paso (Modo Socrático)"]
 )
 
-# Misiones en Sidebar
-with st.sidebar.expander("🎯 Misiones de la Sesión", expanded=True):
+# VISUALIZACIÓN MEJORADA DE MISIONES 2.0
+with st.sidebar.expander("🎯 MISIONES Y DESAFÍOS ACTIVOS", expanded=True):
     for m in st.session_state.misiones:
-        check = "✅" if m["completada"] else "⬜"
-        st.write(f"{check} **{m['titulo']}** (+{m['recompensa']} 🪨)")
+        if m["completada"]:
+            st.markdown(f"✅ **{m['titulo']}**  \n<small>🎉 Completada (+{m['recompensa']} 🪨)</small>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"⬜ **{m['titulo']}** (+{m['recompensa']} 🪨)  \n<small>{m['desc']}</small>", unsafe_allow_html=True)
+        st.write("---")
 
 st.sidebar.divider()
 
@@ -158,84 +174,86 @@ with col_head_img:
 
 with col_head_txt:
     st.title("🤖 Rocko | RML Academy")
-    st.caption("¡Hola! Puedo resolver cualquier duda relacionada al álgebra o alguna de tus prácticas.")
+    st.caption("Sistema experto de tutoría mecatrónica con motor de misiones contextuales.")
 
-# 7. PANEL DE CONTROL ADMIN
+# 7. PANEL DE CONTROL ADMIN (GESTOR AVANZADO DE MISIONES)
 if modo_admin and es_admin:
-    with st.expander("⚙️ PANEL DE CONTROL DE MISIONES Y PARÁMETROS ADMIN", expanded=True):
-        st.subheader("🛠️ Gestor Global de Misiones")
+    with st.expander("⚙️ GESTOR DE MISIONES Y EVALUACIÓN ADMIN", expanded=True):
+        st.subheader("🛠️ Inyectar Nueva Misión al Estudiante")
         
         with st.form("nueva_mision_form"):
-            col_m1, col_m2 = st.columns([3, 1])
-            nueva_m_titulo = col_m1.text_input("Título de la nueva misión:")
-            nueva_m_pts = col_m2.number_input("Stones 🪨:", value=50, step=25)
-            btn_crear_mision = st.form_submit_button("➕ Agregar Misión")
+            col_m1, col_m2 = st.columns([2, 1])
+            nueva_m_titulo = col_m1.text_input("Título de la Misión:")
+            nueva_m_desc = col_m1.text_input("Descripción / Objetivo:")
+            nueva_m_pts = col_m2.number_input("Recompensa 🪨:", value=100, step=25)
+            nueva_m_kw = col_m2.text_input("Palabras Clave (sep por comas):", value="examen,reto")
+            btn_crear_mision = st.form_submit_button("➕ Asignar Misión a la Clase")
             
             if btn_crear_mision and nueva_m_titulo:
+                kw_list = [k.strip().lower() for k in nueva_m_kw.split(",") if k.strip()]
                 st.session_state.misiones.append({
                     "id": len(st.session_state.misiones) + 1,
                     "titulo": nueva_m_titulo,
+                    "desc": nueva_m_desc if nueva_m_desc else "Desafío especial asignado por el profesor.",
                     "recompensa": nueva_m_pts,
-                    "completada": False
+                    "completada": False,
+                    "keywords": kw_list
                 })
-                st.toast("Misión asignada al catálogo activo.", icon="🎯")
+                st.toast("¡Nueva Misión asignada con éxito al estudiante!", icon="🎯")
                 st.rerun()
 
-        col_adm1, col_adm2 = st.columns(2)
-        if col_adm1.button("🎁 Otorgar +100 Stones 🪨"):
-            st.session_state.xp += 100
-            st.toast("Incentivo académico registrado.")
-            st.rerun()
-        if col_adm2.button("🔴 Resetear Datos de Sesión"):
-            st.session_state.xp = 0
-            st.session_state.problemas_resueltos = 0
+        st.subheader("📋 Validación Manual por el Profesor")
+        col_m_val1, col_m_val2 = st.columns(2)
+        m_seleccionada = col_m_val1.selectbox("Seleccionar misión para aprobar:", [m["titulo"] for m in st.session_state.misiones if not m["completada"]])
+        if col_m_val2.button("✅ Validar y Otorgar Puntos"):
             for m in st.session_state.misiones:
-                m["completada"] = False
-            st.rerun()
+                if m["titulo"] == m_seleccionada:
+                    m["completada"] = True
+                    st.session_state.xp += m["recompensa"]
+                    st.toast(f"¡Misión '{m['titulo']}' aprobada manualmente!", icon="🏆")
+                    st.balloons()
+                    st.rerun()
     st.divider()
 
 # 8. ESTRUCTURA EN PESTAÑAS
-tab_ruta, tab_consola, tab_reporte = st.tabs(["MAPA DE RUTA", "CONSOLA ROCKO NLP", "DIAGNÓSTICO TÉCNICO"])
+tab_ruta, tab_consola, tab_reporte = st.tabs(["🎮 MODO PRÁCTICA (GENERADOR DE DESAFÍOS)", "CONSOLA ROCKO NLP", "DIAGNÓSTICO Y MISIONES"])
 
+# PESTAÑA 1: MODO PRÁCTICA
 with tab_ruta:
-    st.subheader(f"Ruta Interactiva: {modulo}")
-    st.write("Selecciona un nodo de la ruta para cargar el caso de estudio correspondiente:")
+    st.subheader(f"🎯 Generador de Desafíos Adaptativos: {modulo}")
+    st.write("Configura el tema para generar un escenario de taller real:")
     
-    col_n1, col_n2, col_n3 = st.columns(3)
+    col_p1, col_p2 = st.columns(2)
+    dificultad = col_p1.select_slider("Nivel de Dificultad:", options=["Básico", "Intermedio", "Desafío de Examen"])
+    tipo_caso = col_p2.selectbox("Tema del Desafío:", ["Circuitos y Ley de Ohm", "Velocidad de Corte CNC", "Torque y Cinemática Robótica"])
     
-    with col_n1:
-        st.markdown("""
-        <div class="node-card">
-            <h4>⚡ Nodo 1: Ley de Ohm</h4>
-            <p><small>Análisis de voltaje, corriente y resistencia en serie.</small></p>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Cargar Caso 1 en Consola"):
-            st.session_state.prompt_cargado = "Tengo un circuito en serie con V=24V, R1=100 y R2=200 ohms. Calcula I total y V2."
-            st.info("Caso cargado. Ve a la pestaña 'CONSOLA ROCKO NLP'.")
+    if st.button("⚡ Generar Nuevo Desafío Personalizado", type="primary"):
+        v_rand = random.choice([12, 24, 48, 110, 220])
+        r1_rand = random.randint(50, 500)
+        r2_rand = random.randint(50, 500)
+        d_rand = random.choice([25, 50, 75, 100])
+        rpm_rand = random.choice([800, 1200, 1800, 2400])
+        l_rand = round(random.uniform(0.3, 1.2), 2)
+        m_rand = round(random.uniform(1.0, 5.0), 1)
 
-    with col_n2:
-        st.markdown("""
-        <div class="node-card">
-            <h4>⚙️ Nodo 2: Velocidad CNC</h4>
-            <p><small>Cálculo de velocidad de corte Vc y RPM del husillo.</small></p>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Cargar Caso 2 en Consola"):
-            st.session_state.prompt_cargado = "Calcula la velocidad de corte Vc para un maquinado con diámetro D=50mm a N=1200 RPM."
-            st.info("Caso cargado. Ve a la pestaña 'CONSOLA ROCKO NLP'.")
+        if "Circuitos" in tipo_caso:
+            if dificultad == "Básico":
+                prompt_gen = f"En un panel industrial alimentado con {v_rand}V se conecta una resistencia R1 de {r1_rand} ohms. Modela el sistema y calcula la corriente I."
+            elif dificultad == "Intermedio":
+                prompt_gen = f"Un circuito mixto de tablero tiene dos resistencias en paralelo de {r1_rand} ohms conectadas en serie con una de {r2_rand} ohms. Con una fuente de {v_rand}V, calcula la corriente total y la potencia disipada."
+            else:
+                prompt_gen = f"En una línea de producción, un circuito con fuente de {v_rand}V presenta una caída de tensión por tres resistencias R1={r1_rand}Ω, R2={r2_rand}Ω y R3=100Ω. Evalúa el modelo algebraico y determina si supera el límite de seguridad de 2 Amperes."
 
-    with col_n3:
-        st.markdown("""
-        <div class="node-card">
-            <h4>🤖 Nodo 3: Cinemática Robot</h4>
-            <p><small>Torque en la articulación de un brazo robótico.</small></p>
-        </div>
-        """, unsafe_allow_html=True)
-        if st.button("Cargar Caso 3 en Consola"):
-            st.session_state.prompt_cargado = "Un brazo robótico de 0.5m sostiene una masa de 2kg en el extremo. ¿Cuál es el torque en la articulación?"
-            st.info("Caso cargado. Ve a la pestaña 'CONSOLA ROCKO NLP'.")
+        elif "CNC" in tipo_caso:
+            prompt_gen = f"Se requiere mecanizar una pieza de acero con diámetro D={d_rand}mm en un torno CNC girando a N={rpm_rand} RPM. Dificultad: {dificultad}. Calcula la velocidad de corte Vc y determina si cumple los parámetros del fabricante."
 
+        else: # Robótica
+            prompt_gen = f"Un brazo robótico articulado con una longitud de eslabón L={l_rand}m sostiene una carga útil de m={m_rand}kg en su extremo. Dificultad: {dificultad}. Calcula el torque en la articulación considerando g=9.81 m/s²."
+
+        st.session_state.prompt_cargado = prompt_gen
+        st.success(f"¡Desafío ({dificultad}) generado con éxito! Pasa a la 'CONSOLA ROCKO NLP' para resolverlo.")
+
+# PESTAÑA 2: CONSOLA NLP (CON VALIDADOR AUTOMÁTICO DE MISIONES 2.0)
 with tab_consola:
     if api_key:
         try:
@@ -258,7 +276,7 @@ with tab_consola:
                - Si la consulta no es de ingeniería/mecatrónica, recházala amablemente.
                - Si pertenece a OTRO módulo diferente a **{modulo}**, indica que debe cambiar el módulo en la barra lateral.
             3. {regla_modo}
-            4. Si el usuario no dio un dato esencial (como el voltaje de fuente), indícalo amablemente para que lo proporcione o asuma un valor típico de laboratorio.
+            4. Si el usuario no dio un dato esencial, indícalo amablemente para que lo proporcione.
             """
 
             if "mensajes" not in st.session_state:
@@ -313,24 +331,35 @@ with tab_consola:
                                     st.info("💡 **Aviso del Sistema:** Consulta en proceso de análisis.")
                                     break
                         
+                        # --- MOTOR EVALUADOR DE MISIONES 2.0 ---
                         if exito:
                             st.session_state.xp += 50
                             st.session_state.problemas_resueltos += 1
-                            
                             prompt_low = prompt_final.lower()
-                            palabras_ohm = ["ohm", "resistencia", "voltaje", "corriente", "circuito", "paralelo", "serie", "v=", "i=", "r="]
-                            es_tema_ohm = any(p in prompt_low for p in palabras_ohm)
                             
-                            if es_tema_ohm or st.session_state.problemas_resueltos >= 1:
-                                st.session_state.misiones[0]["completada"] = True
-                            if st.session_state.xp >= 100:
-                                st.session_state.misiones[1]["completada"] = True
-                            if st.session_state.problemas_resueltos >= 3:
-                                st.session_state.misiones[2]["completada"] = True
-                                
-                            st.toast(random.choice(MENSAJES_TOAST_EXITO), icon="🪨")
-                            if st.session_state.xp % 100 == 0:
+                            mision_completada_ahora = False
+                            
+                            # Recorrer misiones activas y comprobar palabras clave
+                            for m in st.session_state.misiones:
+                                if not m["completada"]:
+                                    # Caso 1: Validación por palabras clave específicas
+                                    if m["keywords"] and any(kw in prompt_low for kw in m["keywords"]):
+                                        m["completada"] = True
+                                        st.session_state.xp += m["recompensa"]
+                                        st.toast(f"🎯 ¡Misión Cumplida: {m['titulo']}! (+{m['recompensa']} 🪨)", icon="🏆")
+                                        mision_completada_ahora = True
+                                    
+                                    # Caso 2: Validación especial por Stones acumuladas (Misión 3)
+                                    elif m["id"] == 3 and st.session_state.xp >= 150:
+                                        m["completada"] = True
+                                        st.session_state.xp += m["recompensa"]
+                                        st.toast(f"🏆 ¡Misión de Maestría Desbloqueada! (+{m['recompensa']} 🪨)", icon="👑")
+                                        mision_completada_ahora = True
+                            
+                            if mision_completada_ahora:
                                 st.balloons()
+                            else:
+                                st.toast(random.choice(MENSAJES_TOAST_EXITO), icon="🪨")
                             
                             st.rerun()
 
@@ -339,13 +368,20 @@ with tab_consola:
     else:
         st.info("ℹ️ Ingresa la clave de acceso a la API en el menú lateral.")
 
+# PESTAÑA 3: DIAGNÓSTICO Y EXPEDIENTE DE MISIONES
 with tab_reporte:
-    st.subheader("📊 Diagnóstico del Aprendiz y Registro de Actividad")
-    col_r1, col_r2 = st.columns(2)
-    col_r1.metric("Casos Analizados", f"{st.session_state.problemas_resueltos}")
+    st.subheader("📊 Diagnóstico del Aprendiz y Expediente Técnico")
+    col_r1, col_r2, col_r3 = st.columns(3)
+    col_r1.metric("Casos Resueltos", f"{st.session_state.problemas_resueltos}")
     col_r2.metric("Puntuación Total", f"{st.session_state.xp} pts")
+    col_r3.metric("Nivel Mecatrónico", f"Nivel {(st.session_state.xp // 100) + 1}")
     
-    st.write("### Avance en Misiones del Dossier")
+    st.write("### 📜 Historial Completo de Misiones")
     for m in st.session_state.misiones:
-        estado = "Completada ✅" if m["completada"] else "Pendiente ⬜"
-        st.info(f"**{m['titulo']}** — Estado: `{estado}` — Recompensa: `{m['recompensa']} Stones`")
+        estado = "COMPLETADA ✅" if m["completada"] else "EN PROGRESO ⬜"
+        color = "green" if m["completada"] else "orange"
+        st.markdown(f"""
+        > **{m['titulo']}**  
+        > *Estado:* `{estado}` | *Recompensa:* `{m['recompensa']} Stones`  
+        > *Objetivo:* {m['desc']}
+        """)
