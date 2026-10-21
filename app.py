@@ -74,7 +74,7 @@ MENSAJES_TOAST_EXITO = [
     "¡Modelo algebraico resuelto sin fallas! 🪨"
 ]
 
-# 4. INICIALIZACIÓN DE SISTEMA DE MISIONES 2.0 EN MEMORIA
+# 4. INICIALIZACIÓN DE ESTADOS EN MEMORIA CON MISIONES BLINDADAS
 if "xp" not in st.session_state:
     st.session_state.xp = 0
 if "racha" not in st.session_state:
@@ -82,9 +82,9 @@ if "racha" not in st.session_state:
 if "problemas_resueltos" not in st.session_state:
     st.session_state.problemas_resueltos = 0
 
-# Estructura enriquecida de misiones (con categoría y palabras clave de validación)
-if "misiones" not in st.session_state:
-    st.session_state.misiones = [
+# Estructura de misiones con valores por defecto seguros
+def obtener_misiones_iniciales():
+    return [
         {
             "id": 1, 
             "titulo": "Análisis de Ley de Ohm", 
@@ -107,9 +107,12 @@ if "misiones" not in st.session_state:
             "desc": "Acumula 150 Stones en tu expediente de laboratorio.",
             "recompensa": 100, 
             "completada": False,
-            "keywords": [] # Se valida por puntaje
+            "keywords": []
         }
     ]
+
+if "misiones" not in st.session_state:
+    st.session_state.misiones = obtener_misiones_iniciales()
 
 # 5. BARRA LATERAL (SIDEBAR) CON FOTO DE ROCKO
 col_logo_side, col_title_side = st.sidebar.columns([1, 2])
@@ -136,19 +139,23 @@ modulo = st.sidebar.selectbox(
     ]
 )
 
-# Modalidad de respuesta pedagógica
 modo_tutoria = st.sidebar.radio(
     "Estilo de Tutoría:",
     ["Explicación Completa (7 Secciones)", "Guía Paso a Paso (Modo Socrático)"]
 )
 
-# VISUALIZACIÓN MEJORADA DE MISIONES 2.0
+# VISUALIZACIÓN DE MISIONES (USANDO .get() PARA EVITAR KEYERROR)
 with st.sidebar.expander("🎯 MISIONES Y DESAFÍOS ACTIVOS", expanded=True):
     for m in st.session_state.misiones:
-        if m["completada"]:
-            st.markdown(f"✅ **{m['titulo']}**  \n<small>🎉 Completada (+{m['recompensa']} 🪨)</small>", unsafe_allow_html=True)
+        titulo = m.get("titulo", "Misión")
+        recompensa = m.get("recompensa", 50)
+        desc = m.get("desc", "Completar análisis en la Consola NLP.")
+        completada = m.get("completada", False)
+        
+        if completada:
+            st.markdown(f"✅ **{titulo}**  \n<small>🎉 Completada (+{recompensa} 🪨)</small>", unsafe_allow_html=True)
         else:
-            st.markdown(f"⬜ **{m['titulo']}** (+{m['recompensa']} 🪨)  \n<small>{m['desc']}</small>", unsafe_allow_html=True)
+            st.markdown(f"⬜ **{titulo}** (+{recompensa} 🪨)  \n<small>{desc}</small>", unsafe_allow_html=True)
         st.write("---")
 
 st.sidebar.divider()
@@ -176,7 +183,7 @@ with col_head_txt:
     st.title("🤖 Rocko | RML Academy")
     st.caption("Sistema experto de tutoría mecatrónica con motor de misiones contextuales.")
 
-# 7. PANEL DE CONTROL ADMIN (GESTOR AVANZADO DE MISIONES)
+# 7. PANEL DE CONTROL ADMIN
 if modo_admin and es_admin:
     with st.expander("⚙️ GESTOR DE MISIONES Y EVALUACIÓN ADMIN", expanded=True):
         st.subheader("🛠️ Inyectar Nueva Misión al Estudiante")
@@ -202,17 +209,24 @@ if modo_admin and es_admin:
                 st.toast("¡Nueva Misión asignada con éxito al estudiante!", icon="🎯")
                 st.rerun()
 
-        st.subheader("📋 Validación Manual por el Profesor")
+        st.subheader("📋 Manejo de Memoria y Validación")
         col_m_val1, col_m_val2 = st.columns(2)
-        m_seleccionada = col_m_val1.selectbox("Seleccionar misión para aprobar:", [m["titulo"] for m in st.session_state.misiones if not m["completada"]])
-        if col_m_val2.button("✅ Validar y Otorgar Puntos"):
-            for m in st.session_state.misiones:
-                if m["titulo"] == m_seleccionada:
-                    m["completada"] = True
-                    st.session_state.xp += m["recompensa"]
-                    st.toast(f"¡Misión '{m['titulo']}' aprobada manualmente!", icon="🏆")
-                    st.balloons()
-                    st.rerun()
+        if col_m_val1.button("🔴 Reiniciar Misiones a Valores por Defecto"):
+            st.session_state.misiones = obtener_misiones_iniciales()
+            st.toast("Misiones reiniciadas.")
+            st.rerun()
+            
+        m_pendientes = [m.get("titulo", "Misión") for m in st.session_state.misiones if not m.get("completada", False)]
+        if m_pendientes:
+            m_seleccionada = col_m_val2.selectbox("Aprobar manualmente:", m_pendientes)
+            if col_m_val2.button("✅ Validar y Otorgar Puntos"):
+                for m in st.session_state.misiones:
+                    if m.get("titulo") == m_seleccionada:
+                        m["completada"] = True
+                        st.session_state.xp += m.get("recompensa", 50)
+                        st.toast(f"¡Misión aprobada!", icon="🏆")
+                        st.balloons()
+                        st.rerun()
     st.divider()
 
 # 8. ESTRUCTURA EN PESTAÑAS
@@ -247,13 +261,13 @@ with tab_ruta:
         elif "CNC" in tipo_caso:
             prompt_gen = f"Se requiere mecanizar una pieza de acero con diámetro D={d_rand}mm en un torno CNC girando a N={rpm_rand} RPM. Dificultad: {dificultad}. Calcula la velocidad de corte Vc y determina si cumple los parámetros del fabricante."
 
-        else: # Robótica
+        else:
             prompt_gen = f"Un brazo robótico articulado con una longitud de eslabón L={l_rand}m sostiene una carga útil de m={m_rand}kg en su extremo. Dificultad: {dificultad}. Calcula el torque en la articulación considerando g=9.81 m/s²."
 
         st.session_state.prompt_cargado = prompt_gen
         st.success(f"¡Desafío ({dificultad}) generado con éxito! Pasa a la 'CONSOLA ROCKO NLP' para resolverlo.")
 
-# PESTAÑA 2: CONSOLA NLP (CON VALIDADOR AUTOMÁTICO DE MISIONES 2.0)
+# PESTAÑA 2: CONSOLA NLP
 with tab_consola:
     if api_key:
         try:
@@ -331,7 +345,7 @@ with tab_consola:
                                     st.info("💡 **Aviso del Sistema:** Consulta en proceso de análisis.")
                                     break
                         
-                        # --- MOTOR EVALUADOR DE MISIONES 2.0 ---
+                        # --- MOTOR EVALUADOR DE MISIONES SEGURO ---
                         if exito:
                             st.session_state.xp += 50
                             st.session_state.problemas_resueltos += 1
@@ -339,21 +353,21 @@ with tab_consola:
                             
                             mision_completada_ahora = False
                             
-                            # Recorrer misiones activas y comprobar palabras clave
                             for m in st.session_state.misiones:
-                                if not m["completada"]:
-                                    # Caso 1: Validación por palabras clave específicas
-                                    if m["keywords"] and any(kw in prompt_low for kw in m["keywords"]):
+                                if not m.get("completada", False):
+                                    kws = m.get("keywords", [])
+                                    m_id = m.get("id", 0)
+                                    
+                                    if kws and any(kw in prompt_low for kw in kws):
                                         m["completada"] = True
-                                        st.session_state.xp += m["recompensa"]
-                                        st.toast(f"🎯 ¡Misión Cumplida: {m['titulo']}! (+{m['recompensa']} 🪨)", icon="🏆")
+                                        st.session_state.xp += m.get("recompensa", 50)
+                                        st.toast(f"🎯 ¡Misión Cumplida: {m.get('titulo')}! (+{m.get('recompensa')} 🪨)", icon="🏆")
                                         mision_completada_ahora = True
                                     
-                                    # Caso 2: Validación especial por Stones acumuladas (Misión 3)
-                                    elif m["id"] == 3 and st.session_state.xp >= 150:
+                                    elif m_id == 3 and st.session_state.xp >= 150:
                                         m["completada"] = True
-                                        st.session_state.xp += m["recompensa"]
-                                        st.toast(f"🏆 ¡Misión de Maestría Desbloqueada! (+{m['recompensa']} 🪨)", icon="👑")
+                                        st.session_state.xp += m.get("recompensa", 100)
+                                        st.toast("🏆 ¡Misión de Maestría Desbloqueada!", icon="👑")
                                         mision_completada_ahora = True
                             
                             if mision_completada_ahora:
@@ -368,7 +382,7 @@ with tab_consola:
     else:
         st.info("ℹ️ Ingresa la clave de acceso a la API en el menú lateral.")
 
-# PESTAÑA 3: DIAGNÓSTICO Y EXPEDIENTE DE MISIONES
+# PESTAÑA 3: DIAGNÓSTICO
 with tab_reporte:
     st.subheader("📊 Diagnóstico del Aprendiz y Expediente Técnico")
     col_r1, col_r2, col_r3 = st.columns(3)
@@ -378,10 +392,14 @@ with tab_reporte:
     
     st.write("### 📜 Historial Completo de Misiones")
     for m in st.session_state.misiones:
-        estado = "COMPLETADA ✅" if m["completada"] else "EN PROGRESO ⬜"
-        color = "green" if m["completada"] else "orange"
+        titulo = m.get("titulo", "Misión")
+        recompensa = m.get("recompensa", 50)
+        desc = m.get("desc", "Completar análisis en la Consola NLP.")
+        completada = m.get("completada", False)
+        
+        estado = "COMPLETADA ✅" if completada else "EN PROGRESO ⬜"
         st.markdown(f"""
-        > **{m['titulo']}**  
-        > *Estado:* `{estado}` | *Recompensa:* `{m['recompensa']} Stones`  
-        > *Objetivo:* {m['desc']}
+        > **{titulo}**  
+        > *Estado:* `{estado}` | *Recompensa:* `{recompensa} Stones`  
+        > *Objetivo:* {desc}
         """)
