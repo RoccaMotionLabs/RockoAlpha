@@ -4,7 +4,7 @@ from google.genai import types
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Rocko - RML- Academy", 
+    page_title="Rocko - RML Academy", 
     page_icon="🤖", 
     layout="wide"
 )
@@ -19,11 +19,11 @@ if "problemas_resueltos" not in st.session_state:
 
 # --- BARRA LATERAL TIPO DUOLINGO ---
 st.sidebar.image("https://img.icons8.com/color/96/robot-2.png", width=80)
-st.sidebar.title("🎮 Rocko Academy")
+st.sidebar.title("🗺️ RML Academy")
 
 # Panel de Estadísticas
 col_xp, col_racha = st.sidebar.columns(2)
-col_xp.metric("⚡ XP Ganados", f"{st.session_state.xp} pts")
+col_xp.metric("🪨 Stones Ganadas", f"{st.session_state.xp} pts")
 col_racha.metric("🔥 Racha", f"{st.session_state.racha} días")
 
 # Nivel del Usuario según XP
@@ -53,8 +53,8 @@ with st.sidebar.expander("🎯 Misión Activa"):
     st.write("• Resuelve 1 problema del dossier RML-01 para ganar +50 XP.")
 
 # --- ENCABEZADO PRINCIPAL ---
-st.title("🤖 Rocko | Entrenador Técnico RML-01")
-st.caption("Aprende e interpreta el modelo algebraico del dossier paso a paso.")
+st.title("¡Hola! mi nombre es 🤖 Rocko ")
+st.caption("Puedo ayudarte a comprender más sobre el álgebra, guíandote paso a paso.")
 
 # Configuración de API Key
 api_key = st.secrets.get("GEMINI_API_KEY") if "GEMINI_API_KEY" in st.secrets else st.sidebar.text_input("Ingresa tu API Key de Gemini:", type="password")
@@ -111,7 +111,7 @@ if api_key:
                         # AUMENTAR GAMIFICACIÓN AL RESPONDER
                         st.session_state.xp += 50
                         st.session_state.problemas_resueltos += 1
-                        st.toast("¡+50 XP Ganados! 🎉", icon="⚡")
+                        st.toast("¡+50 Stones Ganadas! 🎉", icon="🪨")
                         
                         # Si alcanza un hito, lanza globos festivos en la pantalla
                         if st.session_state.xp % 100 == 0:
