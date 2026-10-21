@@ -4,6 +4,9 @@ import time
 from google import genai
 from google.genai import types
 
+# URL de la imagen oficial de Rocko (Postimg)
+ROCKO_IMAGE_URL = "https://i.postimg.cc/yxGVScWZ/imagen.png"
+
 # 1. Configuración de la página
 st.set_page_config(
     page_title="RML Academy - Rocko", 
@@ -93,7 +96,7 @@ if "misiones" not in st.session_state:
 # 5. BARRA LATERAL (SIDEBAR) CON FOTO DE ROCKO
 col_logo_side, col_title_side = st.sidebar.columns([1, 2])
 with col_logo_side:
-    st.image("https://i.imgur.com/3Yp7j7j.png", width=65)
+    st.image(ROCKO_IMAGE_URL, width=65)
 with col_title_side:
     st.sidebar.title("🗺️ RML Academy")
 
@@ -140,7 +143,7 @@ api_key = st.secrets.get("GEMINI_API_KEY") if "GEMINI_API_KEY" in st.secrets els
 col_head_img, col_head_txt = st.columns([1, 5])
 
 with col_head_img:
-    st.image("https://i.imgur.com/3Yp7j7j.png", width=100)
+    st.image(ROCKO_IMAGE_URL, width=100)
 
 with col_head_txt:
     st.title("🤖 Rocko | RML Academy")
@@ -229,7 +232,6 @@ with tab_consola:
         try:
             client = genai.Client(api_key=api_key)
 
-            # PROMPT DE VALIDACIÓN ESTRICTA Y ENFOQUE PEDAGÓGICO
             prompt_sistema = f"""
             Eres Rocko, un tutor experto en Mecatrónica de RML Academy.
             Módulo actualmente activo: **{modulo}**.
@@ -270,7 +272,6 @@ with tab_consola:
                 with st.chat_message("assistant", avatar="🤖"):
                     with st.spinner("Rocko analizando variables y evaluando árbol de decisión..."):
                         
-                        # --- BLINDAJE ANTI-503 CON REINTENTOS SILENCIOSOS ---
                         max_reintentos = 3
                         exito = False
                         
@@ -284,10 +285,9 @@ with tab_consola:
                                 st.write(response.text)
                                 st.session_state.mensajes.append({"role": "assistant", "content": response.text})
                                 exito = True
-                                break # Salir del bucle si tuvo éxito
+                                break
                             except Exception as err_api:
                                 str_err = str(err_api)
-                                # Si es un error 503 o de servidor ocupado, reintentar sin asustar al usuario
                                 if "503" in str_err or "UNAVAILABLE" in str_err or "resource exhausted" in str_err.lower():
                                     if intento < max_reintentos - 1:
                                         time.sleep(2)
@@ -295,7 +295,6 @@ with tab_consola:
                                     else:
                                         st.warning(random.choice(MENSAJES_REINTENTO_RED))
                                 else:
-                                    # Para cualquier otro fallo de conexión
                                     st.info("💡 **Aviso del Sistema:** La consulta requiere un replanteamiento técnico. Revisa los datos o presiona Enter nuevamente.")
                                     break
                         
