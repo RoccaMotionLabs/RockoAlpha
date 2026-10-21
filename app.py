@@ -88,7 +88,7 @@ if api_key:
                     try:
                         # Generar contenido usando la API moderna de Google
                         response = client.models.generate_content(
-                            model='gemini-2.5-flash',
+                            model='gemini-3.8-flash',
                             contents=prompt,
                             config=types.GenerateContentConfig(
                                 system_instruction=prompt_sistema,
