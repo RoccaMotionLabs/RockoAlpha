@@ -4,21 +4,37 @@ from google.genai import types
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Rocko - MDOSS", 
+    page_title="Rocko - RML- Academy", 
     page_icon="🤖", 
     layout="wide"
 )
 
-# Encabezado principal
-st.title("🤖 Rocko | MDOSS")
-st.caption("Álgebra Aplicada para Mecatrónica y Electromecánica")
+# --- INICIALIZAR GAMIFICACIÓN EN SESSION_STATE ---
+if "xp" not in st.session_state:
+    st.session_state.xp = 0
+if "racha" not in st.session_state:
+    st.session_state.racha = 1
+if "problemas_resueltos" not in st.session_state:
+    st.session_state.problemas_resueltos = 0
 
-# Menú lateral
+# --- BARRA LATERAL TIPO DUOLINGO ---
 st.sidebar.image("https://img.icons8.com/color/96/robot-2.png", width=80)
-st.sidebar.title("Configuración")
+st.sidebar.title("🎮 Rocko Academy")
 
+# Panel de Estadísticas
+col_xp, col_racha = st.sidebar.columns(2)
+col_xp.metric("⚡ XP Ganados", f"{st.session_state.xp} pts")
+col_racha.metric("🔥 Racha", f"{st.session_state.racha} días")
+
+# Nivel del Usuario según XP
+nivel = (st.session_state.xp // 100) + 1
+st.sidebar.caption(f"🏆 Nivel del Estudiante: **Nivel {nivel}**")
+
+st.sidebar.divider()
+
+# Selección de Módulo con Barra de Progreso
 modulo = st.sidebar.selectbox(
-    "Selecciona el Módulo de Trabajo:",
+    "Elige tu Módulo de Aprendizaje:",
     [
         "Módulo 1: Circuitos Eléctricos y Electrónica",
         "Módulo 2: CNC y Maquinado de Precisión",
@@ -27,48 +43,44 @@ modulo = st.sidebar.selectbox(
     ]
 )
 
-# Obtener API Key de Secrets o Sidebar
-api_key = None
-if "GEMINI_API_KEY" in st.secrets:
-    api_key = st.secrets["GEMINI_API_KEY"]
-else:
-    api_key = st.sidebar.text_input("Ingresa tu API Key de Gemini:", type="password")
+# Barra de progreso del dossier (Simulando avance)
+progreso_modulo = min((st.session_state.problemas_resueltos / 10), 1.0)
+st.sidebar.write("Progreso del Módulo:")
+st.sidebar.progress(progreso_modulo)
+
+# Desafío Activo
+with st.sidebar.expander("🎯 Misión Activa"):
+    st.write("• Resuelve 1 problema del dossier RML-01 para ganar +50 XP.")
+
+# --- ENCABEZADO PRINCIPAL ---
+st.title("🤖 Rocko | Entrenador Técnico RML-01")
+st.caption("Aprende e interpreta el modelo algebraico del dossier paso a paso.")
+
+# Configuración de API Key
+api_key = st.secrets.get("GEMINI_API_KEY") if "GEMINI_API_KEY" in st.secrets else st.sidebar.text_input("Ingresa tu API Key de Gemini:", type="password")
 
 if api_key:
     try:
-        # Inicializar el cliente oficial moderno
         client = genai.Client(api_key=api_key)
 
-        st.sidebar.success(f"Módulo: {modulo.split(':')[0]}")
-        st.sidebar.info("Modelo activo: `gemini-3.8-flash`")
-
-        # Prompt de sistema para Rocko
         prompt_sistema = f"""
-        Eres Rocko, el asistente técnico oficial con IA para el dossier RML-01 de Mecatrónica y Electromecánica.
-        El usuario está trabajando actualmente en el **{modulo}**.
+        Eres Rocko, un tutor técnico gamificado estilo Duolingo para el dossier RML-01 de Mecatrónica.
+        El usuario está trabajando en el **{modulo}**.
 
-        Tus directrices de actuación:
-        1. Preséntate cordialmente si es la primera interacción, pero mantén un enfoque técnico, profesional y preciso.
-        2. Analiza la consulta en lenguaje natural del usuario e identifícala dentro de los 40 problemas del dossier RML-01.
-        3. Extrae claramente las variables numéricas y datos entregados.
-        4. Aplica el modelo matemático y el árbol de decisión correspondiente evaluando las condiciones lógicas.
-        5. Responde de forma estructurada siguiendo ESTRICTAMENTE estas 7 secciones:
-           - 1. Contexto
-           - 2. Datos
-           - 3. Variables
-           - 4. Modelo Matemático
-           - 5. Procedimiento (Árbol de Decisión / Algoritmo)
-           - 6. Solución
-           - 7. Interpretación Técnica
-        6. Si el problema carece de datos suficientes, indícale al usuario qué variables específicas hacen falta.
+        Tus directrices:
+        1. Saluda de forma motivadora y breve.
+        2. Analiza el problema del usuario y aplícalo al dossier RML-01.
+        3. Explica el procedimiento paso a paso estructurado en las 7 secciones del dossier:
+           - 1. Contexto | 2. Datos | 3. Variables | 4. Modelo Matemático | 5. Procedimiento (Árbol de Decisión) | 6. Solución | 7. Interpretación Técnica
+        4. Al final de tu respuesta, dale una palabra de aliento o una pregunta de refuerzo tipo trivia.
         """
 
-        # Historial de chat
+        # Historial de Chat
         if "mensajes" not in st.session_state:
             st.session_state.mensajes = [
                 {
                     "role": "assistant", 
-                    "content": f"¡Hola! Soy **Rocko**, tu asistente técnico para el dossier RML-01. Estamos listos para el **{modulo}**. ¿En qué problema te ayudo?"
+                    "content": f"¡Bienvenido a la academia! 🚀 Estoy listo para ayudarte con el **{modulo}**. Envía tu primer problema para ganar +50 XP."
                 }
             ]
 
@@ -77,16 +89,15 @@ if api_key:
             with st.chat_message(msg["role"], avatar=avatar):
                 st.write(msg["content"])
 
-        # Entrada del usuario
-        if prompt := st.chat_input("Escribe tu problema o consulta técnica aquí..."):
+        # Entrada de Texto
+        if prompt := st.chat_input("Escribe aquí tu problema del dossier o consulta..."):
             st.session_state.mensajes.append({"role": "user", "content": prompt})
             with st.chat_message("user", avatar="👤"):
                 st.write(prompt)
 
             with st.chat_message("assistant", avatar="🤖"):
-                with st.spinner("Rocko está analizando el problema y evaluando las ecuaciones..."):
+                with st.spinner("Rocko está evaluando tu respuesta y calculando las ecuaciones..."):
                     try:
-                        # Generar contenido usando la API moderna de Google
                         response = client.models.generate_content(
                             model='gemini-3.8-flash',
                             contents=prompt,
@@ -96,11 +107,20 @@ if api_key:
                         )
                         st.write(response.text)
                         st.session_state.mensajes.append({"role": "assistant", "content": response.text})
+
+                        # AUMENTAR GAMIFICACIÓN AL RESPONDER
+                        st.session_state.xp += 50
+                        st.session_state.problemas_resueltos += 1
+                        st.toast("¡+50 XP Ganados! 🎉", icon="⚡")
+                        
+                        # Si alcanza un hito, lanza globos festivos en la pantalla
+                        if st.session_state.xp % 100 == 0:
+                            st.balloons()
+
                     except Exception as err:
                         st.error(f"Error al procesar la respuesta: {err}")
 
     except Exception as e:
         st.error(f"Error con la API Key de Gemini: {e}")
-
 else:
-    st.warning("⚠️ Por favor, configura la `GEMINI_API_KEY` en los Secrets de Streamlit Cloud para iniciar a Rocko.")
+    st.warning("⚠️ Configura la `GEMINI_API_KEY` en los Secrets de Streamlit Cloud.")
