@@ -158,7 +158,7 @@ with col_head_img:
 
 with col_head_txt:
     st.title("🤖 Rocko | RML Academy")
-    st.caption("Sistema experto de tutoría mecatrónica y traducción de problemas algebraicos.")
+    st.caption("¡Hola! Puedo resolver cualquier duda relacionada al álgebra o alguna de tus prácticas.")
 
 # 7. PANEL DE CONTROL ADMIN
 if modo_admin and es_admin:
