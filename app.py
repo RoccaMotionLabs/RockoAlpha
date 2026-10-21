@@ -75,7 +75,7 @@ if "misiones" not in st.session_state:
 # 4. BARRA LATERAL (SIDEBAR) CON IMAGEN DE ROCKO
 col_logo_side, col_title_side = st.sidebar.columns([1, 2])
 with col_logo_side:
-    st.image("https://i.imgur.com/3Yp7j7j.png", width=65)
+    st.image("https://i.postimg.cc/yxGVScWZ/imagen.png", width=65)
 with col_title_side:
     st.sidebar.title("🗺️ RML Academy")
 
@@ -122,7 +122,7 @@ api_key = st.secrets.get("GEMINI_API_KEY") if "GEMINI_API_KEY" in st.secrets els
 col_head_img, col_head_txt = st.columns([1, 5])
 
 with col_head_img:
-    st.image("https://i.imgur.com/3Yp7j7j.png", width=100)
+    st.image("https://i.postimg.cc/yxGVScWZ/imagen.png", width=100)
 
 with col_head_txt:
     st.title("🤖 Rocko | RML Academy")
