@@ -82,7 +82,6 @@ if "racha" not in st.session_state:
 if "problemas_resueltos" not in st.session_state:
     st.session_state.problemas_resueltos = 0
 
-# Estructura de misiones con valores por defecto seguros
 def obtener_misiones_iniciales():
     return [
         {
@@ -144,7 +143,7 @@ modo_tutoria = st.sidebar.radio(
     ["Explicación Completa (7 Secciones)", "Guía Paso a Paso (Modo Socrático)"]
 )
 
-# VISUALIZACIÓN DE MISIONES (USANDO .get() PARA EVITAR KEYERROR)
+# VISUALIZACIÓN DE MISIONES SEGURO
 with st.sidebar.expander("🎯 MISIONES Y DESAFÍOS ACTIVOS", expanded=True):
     for m in st.session_state.misiones:
         titulo = m.get("titulo", "Misión")
@@ -159,6 +158,14 @@ with st.sidebar.expander("🎯 MISIONES Y DESAFÍOS ACTIVOS", expanded=True):
         st.write("---")
 
 st.sidebar.divider()
+
+# BOTÓN DE LIMPIEZA DE CACHÉ DE MEMORIA Y ESTADO
+if st.sidebar.button("🧹 Limpiar Caché y Reiniciar Memoria"):
+    st.session_state.clear()
+    st.cache_data.clear()
+    st.cache_resource.clear()
+    st.toast("Caché borrada y memoria de sesión reiniciada.", icon="🧹")
+    st.rerun()
 
 # Panel Admin
 modo_admin = st.sidebar.checkbox("🔒 Panel Admin")
@@ -345,7 +352,6 @@ with tab_consola:
                                     st.info("💡 **Aviso del Sistema:** Consulta en proceso de análisis.")
                                     break
                         
-                        # --- MOTOR EVALUADOR DE MISIONES SEGURO ---
                         if exito:
                             st.session_state.xp += 50
                             st.session_state.problemas_resueltos += 1
