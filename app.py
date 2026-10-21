@@ -2,12 +2,20 @@ import streamlit as st
 import google.generativeai as genai
 
 # Configuración visual de la página
-st.set_page_config(page_title="Asistente RML-01", page_icon="⚙️", layout="wide")
+st.set_page_config(
+    page_title="Rocko - Asistente RML-01", 
+    page_icon="🤖", 
+    layout="wide"
+)
 
-st.title("⚙️ Asistente Interactivo Dossier RML-01")
+# Encabezado principal
+st.title("🤖 Rocko | Asistente Técnico RML-01")
 st.caption("Álgebra Aplicada para Mecatrónica y Electromecánica")
 
-# Menú lateral para organizar los 4 módulos
+# Menú lateral para organizar los módulos
+st.sidebar.image("https://img.icons8.com/color/96/robot-2.png", width=80)
+st.sidebar.title("Configuración")
+
 modulo = st.sidebar.selectbox(
     "Selecciona el Módulo de Trabajo:",
     [
@@ -18,62 +26,91 @@ modulo = st.sidebar.selectbox(
     ]
 )
 
-st.sidebar.success(f"Módulo activo: {modulo}")
-
-# Configuración del motor de Inteligencia Artificial (Gemini)
+# Gestión de la clave de API (Secrets de Streamlit o entrada manual)
+api_key = None
 if "GEMINI_API_KEY" in st.secrets:
     api_key = st.secrets["GEMINI_API_KEY"]
 else:
-    api_key = st.text_input("Ingresa tu API Key de Gemini:", type="password")
+    api_key = st.sidebar.text_input("Ingresa tu API Key de Gemini:", type="password")
 
 if api_key:
-    genai.configure(api_key=api_key)
+    try:
+        genai.configure(api_key=api_key)
 
-    # Instrucciones base del sistema (System Prompt)
-    prompt_sistema = f"""
-    Eres el asistente técnico oficial del proyecto RML-01 de Mecatrónica.
-    El usuario está consultando sobre el **{modulo}**.
+        # Detección automática del modelo disponible para la API Key gratuita
+        modelos_disponibles = [
+            m.name for m in genai.list_models() 
+            if 'generateContent' in m.supported_generation_methods
+        ]
 
-    Instrucciones de actuación:
-    1. Lee la consulta del usuario expuesta en palabras/lenguaje natural.
-    2. Identifica a cuál de los 40 problemas del dossier corresponde.
-    3. Extrae las variables numéricas entregadas.
-    4. Aplica el árbol de decisión correspondiente evaluando las condiciones lógicas.
-    5. Responde estrictamente con la estructura de 7 secciones del dossier:
-       - 1. Contexto
-       - 2. Datos
-       - 3. Variables
-       - 4. Modelo Matemático
-       - 5. Procedimiento (Árbol de Decisión / Algoritmo)
-       - 6. Solución
-       - 7. Interpretación Técnica
-    6. Mantén un tono técnico, claro y profesional.
-    """
+        if modelos_disponibles:
+            # Selecciona el primer modelo de la lista y remueve prefijos
+            nombre_modelo = modelos_disponibles[0].replace('models/', '')
+        else:
+            nombre_modelo = "gemini-1.5-flash"
 
-    modelo = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=prompt_sistema
-    )
+        st.sidebar.success(f"Módulo: {modulo.split(':')[0]}")
+        st.sidebar.info(f"Modelo activo: `{nombre_modelo}`")
 
-    # Historial de conversación
-    if "mensajes" not in st.session_state:
-        st.session_state.mensajes = []
+        # Instrucciones base del sistema para Rocko
+        prompt_sistema = f"""
+        Eres Rocko, el asistente técnico oficial con IA para el dossier RML-01 de Mecatrónica y Electromecánica.
+        El usuario está trabajando actualmente en el **{modulo}**.
 
-    for msg in st.session_state.mensajes:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+        Tus directrices de actuación:
+        1. Preséntate cordialmente si es la primera interacción, pero mantén un enfoque técnico, profesional y preciso.
+        2. Analiza la consulta en lenguaje natural del usuario e identifícala dentro de los 40 problemas del dossier RML-01.
+        3. Extrae claramente las variables numéricas y datos entregados.
+        4. Aplica el modelo matemático y el árbol de decisión correspondiente evaluando las condiciones lógicas.
+        5. Responde de forma estructurada siguiendo ESTRICTAMENTE estas 7 secciones:
+           - 1. Contexto
+           - 2. Datos
+           - 3. Variables
+           - 4. Modelo Matemático
+           - 5. Procedimiento (Árbol de Decisión / Algoritmo)
+           - 6. Solución
+           - 7. Interpretación Técnica
+        6. Si el problema carece de datos suficientes, indícale al usuario qué variables específicas hacen falta.
+        """
 
-    # Entrada de texto del usuario
-    if prompt := st.chat_input("Escribe tu problema o consulta técnica en lenguaje natural..."):
-        st.session_state.mensajes.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.write(prompt)
+        # Inicialización del modelo con system instructions
+        modelo = genai.GenerativeModel(
+            model_name=nombre_modelo,
+            system_instruction=prompt_sistema
+        )
 
-        with st.chat_message("assistant"):
-            with st.spinner("Procesando consulta y evaluando árbol de decisiones..."):
-                response = modelo.generate_content(prompt)
-                st.write(response.text)
+        # Historial de conversación guardado en sesión
+        if "mensajes" not in st.session_state:
+            st.session_state.mensajes = [
+                {
+                    "role": "assistant", 
+                    "content": f"¡Hola! Soy **Rocko**, tu asistente técnico para el dossier RML-01. Actualmente estamos listos para trabajar en el **{modulo}**. ¿En qué problema o consulta te puedo ayudar?"
+                }
+            ]
 
-        st.session_state.mensajes.append({"role": "assistant", "content": response.text})
+        # Desplegar historial de chat
+        for msg in st.session_state.mensajes:
+            avatar = "🤖" if msg["role"] == "assistant" else "👤"
+            with st.chat_message(msg["role"], avatar=avatar):
+                st.write(msg["content"])
+
+        # Entrada de usuario
+        if prompt := st.chat_input("Escribe tu problema o consulta técnica aquí..."):
+            st.session_state.mensajes.append({"role": "user", "content": prompt})
+            with st.chat_message("user", avatar="👤"):
+                st.write(prompt)
+
+            with st.chat_message("assistant", avatar="🤖"):
+                with st.spinner("Rocko está analizando el problema y evaluando las ecuaciones..."):
+                    try:
+                        response = modelo.generate_content(prompt)
+                        st.write(response.text)
+                        st.session_state.mensajes.append({"role": "assistant", "content": response.text})
+                    except Exception as err:
+                        st.error(f"Error al procesar la respuesta: {err}")
+
+    except Exception as e:
+        st.error(f"Error de conexión con la API Key de Gemini: {e}")
+
 else:
-    st.warning("Por favor, ingresa tu API Key de Gemini para activar el asistente.")
+    st.warning("⚠️ Por favor, configura la `GEMINI_API_KEY` en los Secrets de Streamlit Cloud para iniciar a Rocko.")
